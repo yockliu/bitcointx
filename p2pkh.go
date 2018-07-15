@@ -24,13 +24,8 @@ func P2PHKParseScriptPubKey(scriptPubKey []byte) []interface{} {
 }
 
 // P2PHKGenScriptSig generator scriptSig from private key
-func P2PHKGenScriptSig(content []byte, keyPair KeyPair) []byte {
-	// sig
-	sig := []byte{}
-	// pubKey
-	pubKey := keyPair.PublicKey
-
-	return append(sig, pubKey...)
+func P2PHKGenScriptSig(signature []byte, keyPair KeyPair) []byte {
+	return append(signature, keyPair.PublicKey...)
 }
 
 // P2PHKParseScriptSig parse scriptSig to code statement
