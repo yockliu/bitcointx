@@ -8,7 +8,9 @@ import (
 
 // Transaction in or out
 type Transaction struct {
-	Hash     HashCode
+	Hashable
+	Serializable
+	HashID   *HashCode
 	version  uint32
 	in       []TXIn
 	out      []TXOut
@@ -18,7 +20,7 @@ type Transaction struct {
 // TXIn Transaction input
 type TXIn struct {
 	outpoint  Outpoint
-	keyPair   KeyPair
+	keyPair   *KeyPair
 	signature []byte
 	sequence  uint32
 	ScriptSig []byte // generate when serialize
@@ -27,7 +29,7 @@ type TXIn struct {
 // TXOut Trasaction output
 type TXOut struct {
 	value        uint64 // Satoshis
-	address      []byte
+	address      string
 	ScriptPubKey []byte // greerate when serialize
 }
 
@@ -39,7 +41,7 @@ type Outpoint struct {
 }
 
 // NewTXIn New TXIn struct
-func NewTXIn(hashOfTX HashCode, indexInTX uint32, utxo TXOut, senderKey KeyPair) TXIn {
+func NewTXIn(hashOfTX HashCode, indexInTX uint32, utxo TXOut, senderKey *KeyPair) TXIn {
 	txIn := TXIn{}
 	txIn.outpoint = Outpoint{txHash: hashOfTX, n: indexInTX, utxo: utxo}
 	txIn.keyPair = senderKey
@@ -48,7 +50,7 @@ func NewTXIn(hashOfTX HashCode, indexInTX uint32, utxo TXOut, senderKey KeyPair)
 }
 
 // NewTXOut new TXOut struct
-func NewTXOut(value uint64, address []byte) TXOut {
+func NewTXOut(value uint64, address string) TXOut {
 	txOut := TXOut{}
 	txOut.value = value
 	txOut.address = address
@@ -69,8 +71,7 @@ func NewTransaction(txIns []TXIn, txOuts []TXOut) Transaction {
 		txIn.signature = tx.signContent(txIn)
 	}
 
-	txBytes := tx.Serialize()
-	tx.Hash = sha256.Sum256(txBytes)
+	tx.Hash()
 
 	return tx
 }
@@ -160,4 +161,20 @@ func (txOut *TXOut) Serialize() []byte {
 	data = append(data, pubKeyScript...)
 
 	return data
+}
+
+// Deserialize Serializable
+func (tx *Transaction) Deserialize([]byte) {
+	// TODO
+}
+
+// Hash Hashable
+func (tx *Transaction) Hash() *HashCode {
+	if tx.HashID != nil {
+		return tx.HashID
+	}
+	bytes := tx.Serialize()
+	hash := HashCode(sha256.Sum256(bytes))
+	tx.HashID = &hash
+	return tx.HashID
 }

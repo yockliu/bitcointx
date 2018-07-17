@@ -8,7 +8,7 @@ import (
 )
 
 // P2PHKGenScriptPubKey generator scriptPubKey from public key
-func P2PHKGenScriptPubKey(address []byte) []byte {
+func P2PHKGenScriptPubKey(address string) []byte {
 	pubKeyHash := GetPubKeyHashFromAddress(address)
 
 	scriptPubKey := []byte{opDup, opHash160}
@@ -24,7 +24,7 @@ func P2PHKParseScriptPubKey(scriptPubKey []byte) []interface{} {
 }
 
 // P2PHKGenScriptSig generator scriptSig from private key
-func P2PHKGenScriptSig(signature []byte, keyPair KeyPair) []byte {
+func P2PHKGenScriptSig(signature []byte, keyPair *KeyPair) []byte {
 	return append(signature, keyPair.PublicKey...)
 }
 
