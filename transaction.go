@@ -12,14 +12,14 @@ type Transaction struct {
 	Serializable
 	HashID   *HashCode
 	version  uint32
-	in       []TXIn
-	out      []TXOut
+	in       []*TXIn
+	out      []*TXOut
 	lockTime uint32
 }
 
 // TXIn Transaction input
 type TXIn struct {
-	outpoint  Outpoint
+	outpoint  *Outpoint
 	keyPair   *KeyPair
 	signature []byte
 	sequence  uint32
@@ -28,37 +28,38 @@ type TXIn struct {
 
 // TXOut Trasaction output
 type TXOut struct {
-	value        uint64 // Satoshis
-	address      string
+	Value        uint64 // Satoshis
+	Address      string
 	ScriptPubKey []byte // greerate when serialize
 }
 
 // Outpoint of the tx
 type Outpoint struct {
-	txHash HashCode
-	n      uint32
-	utxo   TXOut
+	TxHash HashCode
+	N      uint32
+	Utxo   *TXOut
+	Lock   bool
 }
 
 // NewTXIn New TXIn struct
-func NewTXIn(hashOfTX HashCode, indexInTX uint32, utxo TXOut, senderKey *KeyPair) TXIn {
+func NewTXIn(outpoint *Outpoint, senderKey *KeyPair) *TXIn {
 	txIn := TXIn{}
-	txIn.outpoint = Outpoint{txHash: hashOfTX, n: indexInTX, utxo: utxo}
+	txIn.outpoint = outpoint
 	txIn.keyPair = senderKey
 	txIn.sequence = 0xFFFFFFFF
-	return txIn
+	return &txIn
 }
 
 // NewTXOut new TXOut struct
-func NewTXOut(value uint64, address string) TXOut {
+func NewTXOut(value uint64, address string) *TXOut {
 	txOut := TXOut{}
-	txOut.value = value
-	txOut.address = address
-	return txOut
+	txOut.Value = value
+	txOut.Address = address
+	return &txOut
 }
 
 // NewTransaction new Transaction,
-func NewTransaction(txIns []TXIn, txOuts []TXOut) Transaction {
+func NewTransaction(txIns []*TXIn, txOuts []*TXOut) *Transaction {
 	tx := Transaction{}
 
 	tx.version = 1
@@ -73,31 +74,31 @@ func NewTransaction(txIns []TXIn, txOuts []TXOut) Transaction {
 
 	tx.Hash()
 
-	return tx
+	return &tx
 }
 
 // sign content for the tx in
-func (tx *Transaction) signContent(txIn TXIn) []byte {
+func (tx *Transaction) signContent(txIn *TXIn) []byte {
 	signature := Sign(txIn.keyPair.PrivateKey, tx.hashContent(txIn))
 	return signature
 }
 
-func (tx *Transaction) hashContent(txIn TXIn) []byte {
+func (tx *Transaction) hashContent(txIn *TXIn) []byte {
 	content := Uint32ToBytes(tx.version)
 	content = append(content, Uint32ToBytes(tx.lockTime)...)
 
 	for _, in := range tx.in {
-		value := Uint64ToBytes(in.outpoint.utxo.value)
+		value := Uint64ToBytes(in.outpoint.Utxo.Value)
 		content = append(content, value...)
-		content = append(content, in.outpoint.utxo.address...)
+		content = append(content, in.outpoint.Utxo.Address...)
 	}
 	for _, out := range tx.out {
-		value := Uint64ToBytes(out.value)
+		value := Uint64ToBytes(out.Value)
 		content = append(content, value...)
-		content = append(content, out.address...)
+		content = append(content, out.Address...)
 	}
 
-	content = append(content, txIn.outpoint.utxo.address...)
+	content = append(content, txIn.outpoint.Utxo.Address...)
 
 	hash := sha256.Sum256(content)
 
@@ -133,8 +134,8 @@ func (tx *Transaction) Serialize() []byte {
 func (txIn *TXIn) Serialize() []byte {
 	data := []byte{}
 
-	utxoHash := txIn.outpoint.txHash[:]
-	utxoIndex := Uint32ToBytes(txIn.outpoint.n)
+	utxoHash := txIn.outpoint.TxHash[:]
+	utxoIndex := Uint32ToBytes(txIn.outpoint.N)
 	sigScript := P2PHKGenScriptSig(txIn.signature, txIn.keyPair)
 	sigScriptSize := CompactSizeUint{Value: uint64(len(sigScript))}
 	sequenceBytes := Uint32ToBytes(txIn.sequence)
@@ -152,8 +153,8 @@ func (txIn *TXIn) Serialize() []byte {
 func (txOut *TXOut) Serialize() []byte {
 	data := []byte{}
 
-	value := Uint64ToBytes(txOut.value)
-	pubKeyScript := P2PHKGenScriptPubKey(txOut.address)
+	value := Uint64ToBytes(txOut.Value)
+	pubKeyScript := P2PHKGenScriptPubKey(txOut.Address)
 	pubKeyScriptSize := CompactSizeUint{Value: uint64(len(pubKeyScript))}
 
 	data = append(data, value...)
