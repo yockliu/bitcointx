@@ -7,8 +7,8 @@ import (
 	. "github.com/yockliu/bitcoinlib"
 )
 
-// P2PHKGenScriptPubKey generator scriptPubKey from public key
-func P2PHKGenScriptPubKey(address string) []byte {
+// P2PHKGenPubKeyScript generator scriptPubKey from public key
+func P2PHKGenPubKeyScript(address string) []byte {
 	pubKeyHash := GetPubKeyHashFromAddress(address)
 
 	scriptPubKey := []byte{opDup, opHash160}
@@ -18,17 +18,17 @@ func P2PHKGenScriptPubKey(address string) []byte {
 	return scriptPubKey
 }
 
-// P2PHKParseScriptPubKey parse scriptPubKey to code statement
-func P2PHKParseScriptPubKey(scriptPubKey []byte) []interface{} {
+// P2PHKParsePubKeyScript parse scriptPubKey to code statement
+func P2PHKParsePubKeyScript(scriptPubKey []byte) []interface{} {
 	return []interface{}{}
 }
 
-// P2PHKGenScriptSig generator scriptSig from private key
-func P2PHKGenScriptSig(signature []byte, keyPair *KeyPair) []byte {
+// P2PHKGenSigScript generator scriptSig from private key
+func P2PHKGenSigScript(signature []byte, keyPair *KeyPair) []byte {
 	return append(signature, keyPair.PublicKey...)
 }
 
-// P2PHKParseScriptSig parse scriptSig to code statement
-func P2PHKParseScriptSig(scriptSig []byte) []interface{} {
+// P2PHKParseSigScript parse scriptSig to code statement
+func P2PHKParseSigScript(scriptSig []byte) []interface{} {
 	return []interface{}{}
 }

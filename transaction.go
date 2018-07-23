@@ -8,8 +8,7 @@ import (
 
 // Transaction in or out
 type Transaction struct {
-	Hashable
-	Serializable
+	Cell
 	HashID   *HashCode
 	version  uint32
 	in       []*TXIn
@@ -23,14 +22,14 @@ type TXIn struct {
 	keyPair   *KeyPair
 	signature []byte
 	sequence  uint32
-	ScriptSig []byte // generate when serialize
+	SigScript []byte // generate when serialize
 }
 
 // TXOut Trasaction output
 type TXOut struct {
 	Value        uint64 // Satoshis
 	Address      string
-	ScriptPubKey []byte // greerate when serialize
+	PubKeyScript []byte // greerate when serialize
 }
 
 // Outpoint of the tx
@@ -55,6 +54,7 @@ func NewTXOut(value uint64, address string) *TXOut {
 	txOut := TXOut{}
 	txOut.Value = value
 	txOut.Address = address
+	txOut.PubKeyScript = P2PHKGenPubKeyScript(address)
 	return &txOut
 }
 
@@ -70,11 +70,27 @@ func NewTransaction(txIns []*TXIn, txOuts []*TXOut) *Transaction {
 	// txIn should be signed every one single by
 	for _, txIn := range txIns {
 		txIn.signature = tx.signContent(txIn)
+		txIn.SigScript = P2PHKGenSigScript(txIn.signature, txIn.keyPair)
 	}
 
 	tx.Hash()
 
 	return &tx
+}
+
+// GetOutpoint get the outpoint of the txin
+func (txin *TXIn) GetOutpoint() *Outpoint {
+	return txin.outpoint
+}
+
+// GetIns get the inputs of the tx
+func (tx *Transaction) GetIns() []*TXIn {
+	return tx.in
+}
+
+// GetOuts get the outputs of the tx
+func (tx *Transaction) GetOuts() []*TXOut {
+	return tx.out
 }
 
 // sign content for the tx in
@@ -136,7 +152,7 @@ func (txIn *TXIn) Serialize() []byte {
 
 	utxoHash := txIn.outpoint.TxHash[:]
 	utxoIndex := Uint32ToBytes(txIn.outpoint.N)
-	sigScript := P2PHKGenScriptSig(txIn.signature, txIn.keyPair)
+	sigScript := txIn.SigScript
 	sigScriptSize := CompactSizeUint{Value: uint64(len(sigScript))}
 	sequenceBytes := Uint32ToBytes(txIn.sequence)
 
@@ -154,7 +170,7 @@ func (txOut *TXOut) Serialize() []byte {
 	data := []byte{}
 
 	value := Uint64ToBytes(txOut.Value)
-	pubKeyScript := P2PHKGenScriptPubKey(txOut.Address)
+	pubKeyScript := txOut.PubKeyScript
 	pubKeyScriptSize := CompactSizeUint{Value: uint64(len(pubKeyScript))}
 
 	data = append(data, value...)
